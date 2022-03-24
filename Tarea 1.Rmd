@@ -1,0 +1,377 @@
+---
+title: "Tarea 1"
+author: "Miranda Peñafiel Melissa & Pacheco Martínez Mariana"
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+  .col2 {
+    columns: 2 200px;         /* number of columns and width in pixels*/
+    -webkit-columns: 2 200px; /* chrome, safari */
+    -moz-columns: 2 200px;    /* firefox */
+  }
+  .col3 {
+    columns: 3 100px;
+    -webkit-columns: 3 100px;
+    -moz-columns: 3 100px;
+  }
+</style
+
+<div class="col2">
+
+```{r , echo=FALSE, include=FALSE}
+library(MASS)
+library(ISLR)
+data(Auto)
+str(Auto)
+head(Auto)
+```
+## **Ejercicio 9**
+### This question involves the use of multiple linear regression on the _Auto_ data set
+### (a) Produce a scatterplot matrix which includes all of the variables in the dataset.
+```{r, fig.width=11, fig.height=8}
+pairs(Auto)
+```
+
+### (b) Compute the matrix of correlations between the variables using the function _cor()_. You will need to exclude the _name_ variable, which is qualitative.
+```{r}
+cor(subset(Auto, select = -name))
+```
+
+
+### (c) Use the _lm()_ function to perform a multiple linear regression with _mpg_ as the response and all other variables except _name_ as the predictors. Use the _summary()_ function to print the results. Comment on the output.
+```{r}
+reg <- lm(mpg~.- name, data = Auto)
+summary(reg)
+
+```
+For instance:
+
+1) Is there a relationship between the predictors and the response?  
+Como el p-value de la prueba F es muy pequeno podriamos decir que si hay una relacion entre las variables explicativas y la de respuesta.
+
+2) Which predictors appear to have a statistically significant relationship to the response?  
+Parece que **displacement**, **weight**, **year** y **origin** son estadisticamente significantes con respecto a **mpg**.
+
+3) What does the coefficient for the **year** variable suggest?  
+Como el coeficiente de **year** es 0.7507 esto nos quiere decir que por cada anio que incrementa el modelo de auto (y mientras las demas variables permanezcan constantes) **mpg** incrementa 0.7507, indicando que los autos mas nuevos recorren mayores distancias con menos gasolina.
+
+
+### (d) Use the _plot()_ function to produce diagnostic plots of the linear regression fit. Comment on any problems you see with the fit. Do the residual plots suggest any unusually large outliers? Does the leverage plot identify any observations with unusually high leverage?
+
+```{r}
+par(mfrow = c(2,2))
+plot(reg)
+```
+
+De la grafica de residuales se puede ver que hay una relacion no lineal entre la variable respuesta y las explicativas significando que puede haber problemas con el ajuste. Parece que la normalidad se cumple. Se alcanza a ver que la observacion 14 es influyente ?????????
+
+### (e) Use the * and **_:_** symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically significant?
+```{r}
+reg1 <- lm(mpg ~ . -name + horsepower:displacement + weight:acceleration, data = Auto)
+summary(reg1)
+
+reg2 <- lm(mpg ~ . -name + cylinders:acceleration, data = Auto)
+summary(reg2)
+
+reg3 <- lm(mpg ~ . -name + origin*horsepower, data = Auto)
+summary(reg3)
+
+reg4 <- lm(mpg ~ . -name + horsepower:acceleration + acceleration:weight, data = Auto)
+summary(reg4)
+```
+
+Se hicieron interacciones que parecian tener sentido como que la aceleracion estuviera relacionada con el peso o que los caballos de fuerza tuviesen que ver con el origen del auto. Todos los ajustes tienen un p-value de la F muy pequenio indicando que son significativos. Fijandonos en la $R^2$ concluimos que el primer modelo fue el mejor ya que tiene el valor mas grande (86% de la varianza de la respuesta esta explicada por el modelo), tambien se puede resaltar que los ultimos dos modelos no difieren en este valor a pesar de tener interacciones distintas.
+
+
+### (f) Try a few different transformations of the variables, such as $log(X)$, $\sqrt{X}$, $X^2$. Comment on your findings.
+```{r}
+reg5 <- lm(mpg ~ . -name + log(weight) + I(cylinders^2), data = Auto)
+summary(reg5)
+
+reg6 <- lm(mpg ~ . -name + I(displacement^2) + log(horsepower) + sqrt(weight), data = Auto)
+summary(reg6)
+```
+
+En ambos modelos se obtuvieron 5 variables significativas (en el ultimo modelo hay una variable mas)
+
+
+```{r , echo=FALSE, include=FALSE}
+library(MASS)
+library(gridExtra)
+library(ggplot2)
+library(ISLR)
+data("Carseats")
+```
+
+## **Ejercicio 11**
+
+####  In this problem we will investigate the t-statistic for the null hypothesis $H_0:\beta = 0$ in simple linear regression without an intercept. To begin, we generate a predictor **x** and a response **y** as follows.
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+y = 2*x + rnorm(100)
+```
+####  (a) Perform a simple linear regression of y onto x, without an intercept. Report the coefficient estimate, and the t-statistic and p-value associated with the null hypothesis $H_0:\beta=0$. Comment on these results.
+```{r}
+regyx <- lm(y~x+0)
+summary(regyx)
+```
+
+El p-value que se obtuvo es bastante pequenio, lo que nos permite rechazar $H_0$, es decir, el coeficiente de $x$ es estadisticamente significativo.
+
+#### (b) Now perform a simple linear regression of x onto y without an intercept, and report the coefficient estimate, its standard error, and the corresponding t-statistic and p-values associated with the null hypothesis $H_0: \beta=0$. Comment on these results.
+```{r}
+regxy <- lm(x~y+0)
+summary(regxy)
+```
+
+Se obtuvo el mismo valor de $t$ en los dos modelos, provocando que se obtengan los mismos p-values. Esta vez el coeficiente es menor y tiene sentido ya que $y=2x+\epsilon$ entonces $x=0.5(y - \epsilon)$ y por eso se obtiene un coeficiente de $0.391$. Pareceria que el primer modelo es mejor ya que el coeficiente de $x$ es mas cercano a $2$ que el coeficiente de $y$ a $0.5$.
+
+
+####  (c) What is the relationship between the results obtained in (a) and (b)?
+Se obtuvieron los mismos valores de $t$ y por ende el mismo p-value. Los resultados son aproximadamente inversos.
+```{r}
+par(mfrow = c(1,2))
+plot(y~x); abline(regyx)
+plot(x~y); abline(regxy)
+```
+
+
+####  (d) For the regression of $Y$ onto $X$ without an intercept, the t-statistic for $H_0:\beta=0$ takes the form beta_hat/SE(beta_hat), where beta_hat is given by (3.38), and where $SE(\hat{\beta})=\sqrt{\frac{\sum_{i=1}^n(y_i-x_i\hat{\beta})^2}{(n-1)\sum_{i'=1}^nx_i'^2}}$. Show algebraically, and confirm numerically in *R*, that the t-statistic can be written as $\frac{\sqrt{n-1}\sum_{i=1}^n x_iy_i}{\sqrt{(\sum_{i=1}^nx_i^2)(\sum_{i'=1}^ny_{i'}^2) - (\sum_{i'=1}^nx_{i'}y_{i'})^2}}$.
+
+De (3.14) tenemos que  
+$$\begin{aligned}
+t = \frac{\hat{\beta_1-0}}{SE(\hat{\beta_1})}  
+\end{aligned}$$  
+y de (3.38) obtenemos  
+$$\begin{aligned}
+\hat{\beta} = \frac{\sum_{i=1}^nx_iy_i}{\sum_{i'=1}^nx_{i'}^2}
+\end{aligned}$$
+
+Asi, sustituyendo
+$$\begin{aligned}
+t = \frac{\frac{\sum_{i=1}^nx_iy_i}{\sum_{j=1}^nx_{j}^2}}{\sqrt{\frac{\sum_{i=1}^n(y_i-x_i\hat{\beta})^2}{(n-1)\sum_{j=1}^nx_{j}^2}}}
+ = \frac{\sqrt{n-1}\sum_{i=1}^nx_iy_i}{\sqrt{\sum_{j=1}^nx_{j}^2\sum_{i=1}^n(y_i-x_i\frac{\sum_{j=1}^nx_jy_j}{\sum_{j=1}^nx_{j}^2})^2}}  
+ = \frac{\sqrt{n-1}\sum_{i=1}^n x_iy_i}{\sqrt{(\sum_{i=1}^nx_i^2)(\sum_{j=1}^ny_{j}^2) - (\sum_{j=1}^nx_{j}y_{j})^2}}
+\end{aligned}$$
+
+Ahora, confirmamos numericamente
+```{r}
+n <- length(x)
+t <- sqrt(n-1)*sum((x*y))/sqrt(sum(x^2)*sum(y^2) - sum(x*y)^2)
+as.numeric(t)
+```
+
+Que concuerda con la t que se obtuvo en (a).
+
+
+#### (e) Using the results from (d), argue that the t-statistic for the regression of $y$ onto $x$ is the same as the t-statistic for the regression of $x$ onto $y$.
+Por la forma en la que está definida la fórmula es claro que al intercambiar $x_i$ por $y_i$ el resultado seguirá siendo el mismo ya que el producto conmuta.
+
+
+#### (f) In *R*, show that when regression is performed *with* an intercept, the t-statistic for $H_0:\beta_1=0$ is the same for the regression of $y$ onto $x$ as it is for the regression of $x$ onto $y$.
+
+```{r}
+regyxint <- lm(y~x)
+summary(regyxint)
+
+regxyint <- lm(x~y)
+summary(regxyint)
+```
+
+
+## **Ejercicio 15**
+
+```{r , echo=FALSE, include=FALSE}
+data(Boston)
+str(Boston)
+attach(Boston)
+```
+
+####  This problem involves the **Boston** data set, which we saw in the lab for this chapter. We will now try to predict per capita crime rate using the other variables in this data set. In other words, per capita crime rate is the response, and the other variables are the predictors.
+
+####  (a) For each predictor, fit a simple linear regression model to predict the response. Describe your results. In which of the models is there a statistically significant association between the prediction and the response? Create some plots to back up your assertion.
+```{r}
+reg.zn <- lm(crim~zn)
+summary(reg.zn)
+
+reg.indus <- lm(crim~indus)
+summary(reg.indus)
+
+chas <- as.factor(chas)
+reg.chas <- lm(crim~chas)
+summary(reg.chas)
+
+reg.nox <- lm(crim~nox)
+summary(reg.nox)
+
+reg.rm <- lm(crim~rm)
+summary(reg.rm)
+
+reg.age <- lm(crim~age)
+summary(reg.age)
+
+reg.dis <- lm(crim~dis)
+summary(reg.dis)
+
+reg.rad <- lm(crim~rad)
+summary(reg.rad)
+
+reg.tax <- lm(crim~tax)
+summary(reg.tax)
+
+reg.ptratio <- lm(crim~ptratio)
+summary(reg.ptratio)
+
+reg.black <- lm(crim~black)
+summary(reg.black)
+
+reg.lstat <- lm(crim~lstat)
+summary(reg.lstat)
+
+reg.medv <- lm(crim~medv)
+summary(reg.medv)
+
+```
+
+```{r, fig.width=11, fig.height=8}
+par(mfrow=c(3,4))
+plot(zn, crim)
+abline(reg.zn, col="red",lwd=3)
+
+plot(indus, crim)
+abline(reg.indus, col="red",lwd=3)
+
+plot(nox, crim)
+abline(reg.nox, col="red",lwd=3)
+
+plot(rm, crim)
+abline(reg.rm, col="red",lwd=3)
+
+plot(age, crim)
+abline(reg.age, col="red",lwd=3)
+
+plot(dis, crim)
+abline(reg.dis, col="red",lwd=3)
+
+plot(rad, crim)
+abline(reg.rad, col="red",lwd=3)
+
+plot(tax, crim)
+abline(reg.tax, col="red",lwd=3)
+
+plot(ptratio, crim)
+abline(reg.ptratio, col="red",lwd=3)
+
+plot(black, crim)
+abline(reg.black, col="red",lwd=3)
+
+plot(lstat, crim)
+abline(reg.lstat, col="red",lwd=3)
+
+plot(medv, crim)
+abline(reg.medv, col="red",lwd=3)
+```
+
+Para chas
+```{r}
+plot(chas, crim)
+abline(reg.chas, col="red",lwd=2)
+```
+
+De lo anterior podemos decir que todas las variables explicativas tienen una relacion estadisticamente significativa con **crim** salvo por **chas** ya que el p-value de su modelo es mayor a $0.05$ y esto nos lleva a aceptar $H_0$; en las gráficas se puede ver lo mencionado.
+
+####  (b) Fit a multiple regression model to predict the response using all of the predictors. Describe your results. For which predictors can we reject the null hypothesis $H_0:\beta_j = 0$?
+
+```{r}
+regtodas <- lm(crim~., data = Boston)
+summary(regtodas)
+```
+
+Podemos rechazar $H_0$ para **zn**, **dis**, **rad**, **black** y **medv**.  
+Al hacer la regresión múltiple tenemos que podemos ver la variabilidad de la respuesta con unas cuantas variables significativas, al contrario que haciendo la regresión simple que parecía ser que casi todas las variables eran significativas. Puede que esto ocurra porque hay variables relacionadas y que aportan la misma información al modelo (se podria observar una tabla de correlacion para confirmar esto).
+
+####  (c) How do your results from (a) compare to your results from (b)? Create a plot displaying the univariate regression coefficients from (a) on the $x$-axis, and the multiple regression coefficients from (b) on the $y$-axis. That is, each predictor is displayed as a single point in the plot. Its coefficient in a simple linear regression model is shown on the $x$-axis, and its coefficient estimate in the multiple linear regression model is shown on the $y$-axis.
+
+```{r}
+reg.simple <- c(coefficients(reg.zn)[2],
+                coefficients(reg.indus)[2],
+                coefficients(reg.chas)[2],
+                coefficients(reg.nox)[2],
+                coefficients(reg.rm)[2],
+                coefficients(reg.age)[2],
+                coefficients(reg.dis)[2],
+                coefficients(reg.rad)[2],
+                coefficients(reg.tax)[2],
+                coefficients(reg.ptratio)[2],
+                coefficients(reg.black)[2],
+                coefficients(reg.lstat)[2],
+                coefficients(reg.medv)[2])
+
+reg.multiple <- c(coefficients(regtodas)[-1])
+
+plot(reg.simple, reg.multiple, col = "blue")
+```
+
+En la grafica es claro que si hay diferencia entre los coeficientes de la regresion multiple y de la simple. Por ejemplo, un coeficiente de la regresion simple vale aproximadamente 30 y en la multiple vale aproximadamente -10. Coeficientes que en la simple tienen valores entre 0 y 5 en la multiple tienen valores entre 0 y -2. 
+
+####  (d) Is there evidence of non-linear association between any of the predictors and the response? To answer this question, for each predictor $X$, fit a model of the form $Y = \beta_0 + \beta_1X + \beta_2X^2 + \beta_3X^3 + \epsilon$
+
+```{r}
+reg.zn2 <- lm(crim ~ poly(zn, 3))
+summary(reg.zn2)
+
+reg.indus2 <- lm(crim ~ poly(indus, 3))
+summary(reg.indus2)
+
+reg.nox2 <- lm(crim ~ poly(nox, 3))
+summary(reg.nox2)
+
+reg.rm2 <- lm(crim ~ poly(rm, 3))
+summary(reg.rm2)
+
+reg.age2 <- lm(crim ~ poly(age, 3))
+summary(reg.age2)
+
+reg.dis2 <- lm(crim ~ poly(dis, 3))
+summary(reg.dis2)
+
+reg.rad2 <- lm(crim ~ poly(rad, 3))
+summary(reg.rad2)
+
+reg.tax2 <- lm(crim ~ poly(tax, 3))
+summary(reg.tax2)
+
+reg.ptratio2 <- lm(crim ~ poly(ptratio, 3))
+summary(reg.ptratio2)
+
+reg.black2 <- lm(crim ~ poly(black, 3))
+summary(reg.black2)
+
+reg.lstat2 <- lm(crim ~ poly(lstat, 3))
+summary(reg.lstat2)
+
+reg.medv2 <- lm(crim ~ poly(medv, 3))
+summary(reg.medv2)
+```
+
+Habrá una relación no lineal si los coeficientes de $x^2$ y $x^3$ son significativos. Tomando en cuenta esto analizamos:  
+* Todos significativos: *indus, nox, age, dis, ptratio, medv*  
+* Sólo el término cúbico **no** significativo: *zn, rm, rad, tax, lstat*  
+* Sólo el término lineal significativo: *black*  
+
+Entonces, sólo en *black* parece no haber una relación no lineal.
+
+
+```{r , echo=FALSE}
+
+```
+

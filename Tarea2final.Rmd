@@ -1,0 +1,203 @@
+---
+title: "Tarea 2"
+author: "Galindo Torres Bernardo Antonio, Miranda Peñafiel Melissa, Pacheco Martínez Mariana"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+  .col2 {
+    columns: 2 200px;         /* number of columns and width in pixels*/
+    -webkit-columns: 2 200px; /* chrome, safari */
+    -moz-columns: 2 200px;    /* firefox */
+  }
+  .col3 {
+    columns: 3 100px;
+    -webkit-columns: 3 100px;
+    -moz-columns: 3 100px;
+  }
+</style
+
+<div class="col2">
+ 
+### 8. In Section 10.2.3, a formula for calculating PVE was given in Equation 10.8. We also saw that the PVE can be obtained using the $sdev$ output of the $prcomp()$ function.\ On the USArrests data, calculate PVE in two ways:
+##### (a) Using the $sdev$ output of the $prcomp()$ function, as was done in Section 10.2.3.
+```{r}
+library(MASS)
+data("USArrests")
+attach(USArrests)
+str(USArrests)
+usa_pc = prcomp(USArrests, scale. = TRUE)
+x1<- usa_pc$sdev
+s <- summary(usa_pc)
+s$importance[2,] #proportion of variance
+round(usa_pc$sdev^2,4) #Eigenvalues
+round(usa_pc$rotation,3) #Eigenvectors
+```
+ 
+ $$ \therefore PVE=
+                \left\{ 
+                \begin{array}
+                00.62  && PC1\\
+                0.247 && PC2\\
+                0.089 && PC3\\
+                0.043 && PC4
+                \end{array} \right.
+                 $$
+                
+                
+##### (b) By applying Equation 10.8 directly. That is, use the $prcomp()$ function to compute the principal component loadings. Then, use those loadings in Equation 10.8 to obtain the PVE. 
+```{r}
+pve <- round(usa_pc$sdev^2/sum(usa_pc$sdev^2),3)
+pve
+```
+ $$ \therefore PVE=
+                \left\{ 
+                \begin{array}
+                00.62  && PC1\\
+                0.247 && PC2\\
+                0.089 && PC3\\
+                0.043 && PC4
+                \end{array} \right.
+                 $$
+
+### 9. Consider the $USArrests$ data. We will now perform hierarchical clustering on the states.
+##### (a) Using hierarchical clustering with complete linkage and Euclidean distance, cluster the states.
+```{r, fig.width=11, fig.height=8}
+set.seed(1706)
+
+usa_h_comp=hclust(dist(USArrests), method="complete")
+
+plot(usa_h_comp,main="Complete Linkage", xlab="", sub="",ylab="",cex=.8)
+```
+
+##### (b) Cut the dendrogram at a height that results in three distinct clusters. Which states belong to which clusters?
+```{r}
+cluster3=cutree(usa_h_comp, k=3)
+for( k in 1:3 ){
+  print(k)
+  print( rownames( USArrests )[ cluster3 == k ] )
+}
+table(cutree(usa_h_comp, 3))
+
+```
+$\therefore$  Cuando divides en 3 ramos, en el primero hay 16 estados, en el segundo 14 y en el tercero 20. Tal como se muestra en la parte de arriba.\ 
+
+##### (c) Hierarchically cluster the states using complete linkage and Euclidean distance, $after scaling the variables to have standard deviation one$.
+```{r, fig.width=11, fig.height=8} 
+usa_h_comp_s=hclust(dist(scale(USArrests)), method="complete")
+par(mfrow=c(1,1))
+plot(usa_h_comp_s,main="Complete Linkage scaled variables", xlab="", sub="",ylab="", cex=.7)
+```
+
+##### (d) What effect does scaling the variables have on the hierarchical clustering obtained? In your opinion, should the variables be scaled before the inter-observation dissimilarities are computed?\ Provide a justification for your answer.
+```{r, fig.width=12, fig.height=8}
+par(mfrow=c(1,2))
+plot(usa_h_comp,main="Complete Linkage", xlab="", sub="",ylab="",cex=.6)
+plot(usa_h_comp_s,main="Complete Linkage scaled variables", xlab="", sub="",ylab="", cex=.6)
+
+cluster4=cutree(usa_h_comp_s, k=3)
+for( k in 1:3 ){
+  print(k)
+  print( rownames( USArrests )[ cluster4 == k ] )
+}
+table(cutree(usa_h_comp_s, 3))
+```
+$\therefore$ Como podemos ver, al "escalar" las varibales cambia la altura máxima del arreglo y aunque a primera vista parece que no cambia mucho, al dividir en tres los datos ya estandarizados, vemos que sí afecta. En nuestra opinión es mejor trabajar con los datos escalados, ya que los datos de las columnas están medidos en distintas unidades.($Asault$ y $UrbanPop$ son enteros) 
+
+### 10. In this problem, you will generate simulated data, and then perform PCA and K-means clustering on the data.
+##### (a) Generate a simulated data set with 20 observations in each of three classes (i.e. 60 observations total), and 50 variables. 
+```{r}
+set.seed(30)
+datos10 <- rbind(matrix(rnorm(20*50), nrow = 20),
+                 matrix(rnorm(20*50), nrow = 20) + .8,
+                 matrix(rnorm(20*50), nrow = 20) - 1.4)
+```
+
+##### (b) Perform PCA on the 60 observations and plot the first two principal component score vectors. Use a different color to indicate the observations in each of the three classes. If the three classes appear separated in this plot, then continue on to part (c). If not, then return to part (a) and modify the simulation so that there is greater separation between the three classes. Do not continue to part (c) until the three classes show at least some separation in the first two principal component score vectors.
+```{r}
+pca10 = prcomp(datos10)
+plot(pca10$x[,1:2], col = c(rep(1,20), rep(2,20), rep(3,20)), xlab = "Primer componente principal", ylab = "Segundo componente principal")
+```
+
+##### (c) Perform K-means clustering of the observations with K = 3. How well do the clusters that you obtained in K-means clustering compare to the true class labels?
+```{r}
+km3 = kmeans(datos10, centers = 3, nstart = 20)
+clases = c(rep(1,20), rep(2,20), rep(3,20))
+table(km3$cluster, clases, dnn = c("Clusters", "Clases verdaderas"))
+```
+$\therefore$ Parece ser que se lograron clasificar bien todos los datos ya que se formaron 3 clases con 20 observaciones cada una como los datos originales.
+
+
+##### (d) Perform K-means clustering with K = 2. Describe your results.
+```{r}
+km2 = kmeans(datos10, centers = 2, nstart = 20)
+table(km2$cluster, clases, dnn = c("Clusters", "Clases verdaderas"))
+```
+$\therefore$ Se observa que la clase 1 fue absorbida por la clase 2, de aquí sólo los de clase 3 fueron clasificados apropiadamente.
+
+##### (e) Now perform K-means clustering with K = 4, and describe your results.
+```{r}
+km4 = kmeans(datos10, centers = 4, nstart = 20)
+table(km4$cluster, clases, dnn = c("Clusters", "Clases verdaderas"))
+```
+$\therefore$ Toda la clase 1 fue asignada al cluster 4, la clase 2 fue asignada a la mitad entre cluster 1 y 2, la única clase que parece que sí fue respetada es la 3 con 20/20 observaciones asignadas correctamente.
+
+##### (f) Now perform K-means clustering with K = 3 on the first two principal component score vectors, rather than on the raw data. That is, perform K-means clustering on the 60 x 2 matrix of which the first column is the first principal component score vector, and the second column is the second principal component score vector. Comment on the results.
+```{r}
+km3pca = kmeans(pca10$x[,1:2], centers = 3, nstart = 20)
+table(km3pca$cluster, clases, dnn = c("Clusters", "Clases verdaderas"))
+```
+$\therefore$ Se aprecia que se separaron adecuadamente las observaciones en 3 clusters.
+
+##### (g) Using the scale() function, perform K-means clustering with K = 3 on the data after scaling each variable to have standard deviation one. How do these results compare to those obtained in (b)? Explain.
+```{r}
+km3scale = kmeans(scale(datos10), centers = 3, nstart = 20)
+table(km3scale$cluster, clases, dnn = c("Clusters", "Clases verdaderas"))
+```
+$\therefore$ Podríamos decir que son buenos resultados ya que, de nuevo, se categorizaron las 3 clases con 20 observaciones cada una.
+
+
+
+### 11. On the book website, _www.StatLearning.com_, there is a gene expression data set ($Ch10Ex11.csv$) that consists of 40 tissue samples with measurements on 1,000 genes. The first 20 samples are from healthy patients, while the second 20 are from a diseased group.
+
+##### (a) Load in the data using $read.csv()$. You will need to select $header=F$.
+```{r}
+datos <- read.csv("Ch10Ex11.csv", header = F)
+dim(datos)
+```
+
+##### (b) Apply hierarchical clustering to the samples using correlationbased distance, and plot the dendrogram. Do the genes separate the samples into the two groups? Do your results depend on the type of linkage used?
+```{r}
+dd = as.dist(1 - cor(datos))
+plot(hclust(dd, method="complete"))
+plot(hclust(dd, method="single"))
+plot(hclust(dd, method="average"))
+```
+\
+$\therefore$ Podemos ver que, dependiendo del método, los datos se separan en 2 o 3 grupos. \
+
+##### (c) Your collaborator wants to know which genes differ the most across the two groups. Suggest a way to answer this question, and apply it here.
+$\therefore$ Para ver qué genes difieren más entre sanos y enfermos podemos aplicar PCA y ver qué genes describen mejor la variabilidad de los datos.\
+
+```{r}
+x <- variable.names(datos)
+pca = prcomp(datos, scale = TRUE)
+summary(pca)
+round(pca$sdev^2,4)#Eigenvalores
+```
+
+$\therefore$ Es claro ver que los primeros 12 componentes son los que mantienen la mayor cantidad de información y variabilidad de los datos.   
+
+```{r}
+#round(pca$rotation,3)#Eigenvectores 40 pca x 40 variables
+plot(pca$rotation)
+set.seed(1); km5 = kmeans(pca$x[,1:15], 5, nstart = 5) 
+plot(predict(pca), col = c('red', 'yellow', 'blue', 'green', 'pink'), main = "K-Means (k=5)")
+```
+
