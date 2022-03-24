@@ -1,0 +1,318 @@
+#setwd("/home/jnm/Documentos")
+#setwd("Estadisitca, practicas en R/SLM/Tarea 3")
+library(gRbase)
+library(ggplot2)
+library("dplyr")
+library("caret")
+library("e1071")
+data("cad1")
+dat<-cad1
+
+attach(dat)
+
+#Construcción de las variables de entrenamiento
+
+set.seed(1)
+train<-sample(1:236,177)
+datos_train<-dat[train,]
+test<-dat[-train,]
+
+#------------------------------------Modelación SVM------------------------------------
+
+modelo<-svm(CAD~.,data = dat)
+
+summary(modelo)
+
+
+#Calibricación de los parametros
+
+
+modelo_lineal<-svm(CAD~.,dat,kernel = "linear",cost = 10, scale = TRUE)
+
+summary(modelo_lineal)
+
+predic<-predict(modelo_lineal,dat)
+
+tabla<-table(predic,CAD)
+
+
+
+#Usando 10 - cross validation 
+
+
+#MODELO LINEAL
+
+#Ajuste y comprobación del modelo a partir de todas las observaciones
+
+lineal<-tune(svm,CAD~.,data = dat, kernel ="linear",
+             ranges = list( cost=c(0.001 , 0.01 , 0.1, 1 ,5 ,10 ,100)),scale=TRUE)
+
+m_modelo<-lineal$best.model
+
+pred_t_o<-predict(m_modelo,dat)
+
+ta_1<-table(pred_t_o,CAD)
+
+#Ajuste y comprobación del modelo a partir de las observaciones de entrenamiento
+svm_lineal<-tune(svm ,CAD~., data=datos_train , kernel ="linear",
+                 ranges = list( cost=c(0.001 , 0.01 , 0.1, 1 ,5 ,10 ,100)),scale=TRUE)
+
+
+mejor_modelo<-svm_lineal$best.model
+
+
+predicciones<-predict(mejor_modelo,test)
+
+tna_1<-table(predicciones,test$CAD)
+
+
+confusionMatrix(predicciones,test$CAD)
+
+
+#MODELO POLINOMIAL
+
+#Ajuste y comprobación de todas las observaciones
+
+
+polinomial<-tune("svm" ,CAD~., data=dat , kernel ="polynomial",
+                 ranges = list( cost=c(0.001 , 0.01 , 0.1, 1 ,5 ,10 ,100), degree = c(2,3,4)),scale = TRUE)
+
+
+summary(polinomial)
+
+m_modelo_2<-polinomial$best.model
+
+pred_t_o2<-predict(m_modelo_2,dat)
+
+ta_2<-table(pred_t_o2,CAD)
+
+confusionMatrix(pred_t_o2,CAD)
+
+
+#Ajuste y comprobaciones con el conjunto de observaciones de entrenamiento
+svm_polinomial<-tune("svm" ,CAD~., data=datos_train , kernel ="polynomial",
+                     ranges = list( cost=c(0.001 , 0.01 , 0.1, 1 ,5 ,10 ,100), degree = c(2,3,4)),scale = TRUE)
+
+
+summary(svm_polinomial)
+
+mejor_modelo_polinomial<-svm_polinomial$best.model
+
+
+predicciones_2<-predict(mejor_modelo_polinomial,test)
+
+tna_2<-table(predicciones_2,test$CAD)
+
+
+confusionMatrix(predicciones_2,test$CAD)
+
+
+#MODELO RADIAL
+
+#Ajuste del modelo considerando todas las observaciones
+
+radial<- tune(svm , CAD~., data = dat, kernel ="radial",
+              ranges = list( cost=c (0.1 ,1 ,10 ,100 ,1000) ,
+                             gamma =c(0.5 ,1 ,2 ,3 ,4) ),scale = TRUE)
+
+summary(radial)
+
+m_modelo_3<-radial$best.model
+
+
+pred_t_o3<-predict(m_modelo_3,dat)
+
+ta_3<-table(pred_t_o3,CAD)
+
+confusionMatrix(pred_t_o3,CAD)
+
+
+
+#Ajuste del modelo con el conjunto de observacionesn de entrenamiento
+svm_radial<- tune(svm , CAD~., data = datos_train, kernel ="radial",
+                  ranges = list( cost=c (0.1 ,1 ,10 ,100 ,1000) ,
+                                 gamma =c(0.5 ,1 ,2 ,3 ,4) ),scale = TRUE) 
+
+
+summary(svm_radial)
+
+mejor_modelo_radial<-svm_radial$best.model
+
+
+predicciones_3<-predict(mejor_modelo_radial,test)
+
+tna_3<-table(predicciones_3,test$CAD)
+
+confusionMatrix(predicciones_3,test$CAD)
+
+
+#Tasas de error aparentes 
+
+tasa_global_1<-mean(CAD!=pred_t_o)
+tasa_global_2<-mean(CAD!=pred_t_o2)
+tasa_global_3<-mean(CAD!=pred_t_o3)  
+
+tasa_grupal_1_1<-1-ta_1[1,1]/length(CAD[CAD==levels(CAD)[1]])
+tasa_grupal_1_2<-1-ta_1[2,2]/length(CAD[CAD==levels(CAD)[2]])
+
+
+tasa_grupal_2_1<-1-ta_2[1,1]/length(CAD[CAD==levels(CAD)[1]])
+tasa_grupal_2_2<-1-ta_2[2,2]/length(CAD[CAD==levels(CAD)[2]])
+
+tasa_grupal_3_1<-1-ta_3[1,1]/length(CAD[CAD==levels(CAD)[1]])
+tasa_grupal_3_2<-1-ta_3[2,2]/length(CAD[CAD==levels(CAD)[2]])
+
+tasa_aparente<-rbind(c(tasa_global_1,tasa_grupal_1_1,tasa_grupal_1_2),c(tasa_global_2,tasa_grupal_2_1,tasa_grupal_2_2),c(tasa_global_3,tasa_grupal_3_1,tasa_grupal_3_2))
+
+rownames(tasa_aparente) = c('Lineal','Polinomial','Radial')
+colnames(tasa_aparente) = c("Global","Grupo 0","Grupo 1")
+
+
+
+#Tasas no aparentes 
+
+tasa_global_train_1<-mean(test$CAD!=predicciones)
+tasa_global_train_2<-mean(test$CAD!=predicciones_2)
+tasa_global_train_3<-mean(test$CAD!=predicciones_3)  
+
+tasa_grupal_train_1_1<-1-tna_1[1,1]/length(test$CAD[test$CAD==levels(test$CAD)[1]])
+tasa_grupal_train_1_2<-1-tna_1[2,2]/length(test$CAD[test$CAD==levels(test$CAD)[2]])
+
+
+tasa_grupal_train_2_1<-1-tna_2[1,1]/length(test$CAD[test$CAD==levels(test$CAD)[1]])
+tasa_grupal_train_2_2<-1-tna_2[2,2]/length(test$CAD[test$CAD==levels(test$CAD)[2]])
+
+tasa_grupal_train_3_1<-1-tna_3[1,1]/length(test$CAD[test$CAD==levels(test$CAD)[1]])
+tasa_grupal_train_3_2<-1-tna_3[2,2]/length(test$CAD[test$CAD==levels(test$CAD)[2]])
+
+tasa_no_aparente<-rbind(c(tasa_global_train_1,tasa_grupal_train_1_1,tasa_grupal_train_1_2),c(tasa_global_train_2,tasa_grupal_train_2_1,tasa_grupal_train_2_2),c(tasa_global_train_3,tasa_grupal_train_3_1,tasa_grupal_train_3_2))
+
+rownames(tasa_no_aparente) = c('Lineal','Polinomial','Radial')
+colnames(tasa_no_aparente) = c("Global","Grupo 0","Grupo 1")
+
+
+
+
+
+#------------------------------------Regresión logistica------------------------------------
+
+#Variables de entrenamiento
+set.seed(1)
+train<-sample(1:236,177)
+test<-dat[-train,]
+Cad_pred<-CAD[-train]
+
+#Ajuste y comprobación del modelo utilizando todas las observaciones
+
+modelo_rl<-glm(CAD~.,data = dat, family = "binomial")  
+summary(modelo_rl)
+
+modelo_rl_prob<-predict(modelo_rl,type = "response")
+
+modelo_rl_pred<-rep("No",length(CAD))
+
+modelo_rl_pred[modelo_rl_prob>.5]="Yes"
+
+t_1<-table(modelo_rl_pred,CAD)
+
+
+#Ajuste y comprobación del modelo utilizandolas variables de entrenamiento
+
+logit<-glm(CAD~.,data = datos_train, family = binomial)  
+
+summary(logit)
+
+logit_probs <-predict(logit,test,type = "response")
+
+logit_pred<-rep("No",59)
+
+logit_pred[logit_probs>.5]="Yes"
+
+t_2<-table(logit_pred,Cad_pred)
+
+
+#Tasas aparentes
+
+tasa_global_rl<-mean(modelo_rl_pred != CAD)
+
+tasa_grupal_rl_1<-1-t_1[1,1]/length(CAD[CAD==levels(CAD)[1]])
+
+tasa_grupal_rl_2<-1-t_1[2,2]/length(CAD[CAD==levels(CAD)[2]])
+
+tasa_aparente_rl<-rbind(tasa_global_rl,tasa_grupal_rl_1,tasa_grupal_rl_2)
+
+colnames(tasa_aparente_rl)<-"Tasas aparentes de error"
+
+rownames(tasa_aparente_rl)<-c("Global","Grupo 0","Grupo 1")
+
+
+
+#Tasas no aparentes
+
+tasa_global_train_rl<-mean(logit_pred != Cad_pred)
+
+tasa_grupal_train_rl_1<-1-t_2[1,1]/length(Cad_pred[Cad_pred==levels(Cad_pred)[1]])
+
+tasa_grupal_train_rl_2<-1-t_2[2,2]/length(Cad_pred[Cad_pred==levels(Cad_pred)[2]])
+
+tasa_no_aparente_rl<-rbind(tasa_global_train_rl,tasa_grupal_train_rl_1,tasa_grupal_train_rl_2)
+
+colnames(tasa_no_aparente_rl)<-"Tasas no aparentes de error"
+
+rownames(tasa_no_aparente_rl)<-c("Global","Grupo 0","Grupo 1")
+
+
+
+
+#------------------------------------Naive Bayes------------------------------------
+
+
+#Ajuste del modelo usando todas las observaciones
+
+ajuste_nb<-naiveBayes(CAD~.,data = dat)
+
+pred_ajuste_nb<-predict(ajuste_nb,dat)
+
+tabla_nb_1<-table(pred_ajuste_nb,CAD)
+
+r<-confusionMatrix(pred_ajuste_nb,CAD)
+
+
+#Ajuste del modelo usando sólo las variables de entrenamiento
+modelo_nb<-naiveBayes(CAD~.,data = datos_train)
+summary(modelo_nb)
+#Prediccion 
+
+pred_nb<-predict(modelo_nb,test)
+
+tab_nb_2<-table(pred_nb,test$CAD)
+
+
+#Tasas aparentes
+
+tasa_global_nb<-mean(pred_ajuste_nb != CAD)
+
+tasa_grupal_nb_1<-1-tabla_nb_1[1,1]/length(CAD[CAD==levels(CAD)[1]])
+
+tasa_grupal_nb_2<-1-tabla_nb_1[2,2]/length(CAD[CAD==levels(CAD)[2]])
+
+tasa_aparente_nb<-rbind(tasa_global_nb,tasa_grupal_nb_1,tasa_grupal_nb_2)
+
+colnames(tasa_aparente_nb)<-"Tasas aparentes de error"
+
+rownames(tasa_aparente_nb)<-c("Global","Grupo 0","Grupo 1")
+
+#Tasas no aparentes
+
+tasa_global_train_nb<-mean(pred_nb != test$CAD)
+
+tasa_grupal_train_nb_1<-1-tab_nb_2[1,1]/length(Cad_pred[Cad_pred==levels(Cad_pred)[1]])
+
+tasa_grupal_train_nb_2<-1-tab_nb_2[2,2]/length(Cad_pred[Cad_pred==levels(Cad_pred)[2]])
+
+tasa_no_aparente_nb<-rbind(tasa_global_train_nb,tasa_grupal_train_nb_1,tasa_grupal_train_nb_2)
+
+colnames(tasa_no_aparente_nb)<-"Tasas no aparentes de error"
+
+rownames(tasa_no_aparente_nb)<-c("Global","Grupo 0","Grupo 1")
+
