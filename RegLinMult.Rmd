@@ -1,6 +1,6 @@
 ---
 title: "Tarea 1"
-author: "Miranda PeÒafiel Melissa & Pacheco MartÌnez Mariana"
+author: "Miranda Pe√±afiel Melissa & Pacheco Mart√≠nez Mariana"
 output: 
   prettydoc::html_pretty:
     theme: cayman
@@ -174,7 +174,7 @@ Que concuerda con la t que se obtuvo en (a).
 
 
 #### (e) Using the results from (d), argue that the t-statistic for the regression of $y$ onto $x$ is the same as the t-statistic for the regression of $x$ onto $y$.
-Por la forma en la que est· definida la fÛrmula es claro que al intercambiar $x_i$ por $y_i$ el resultado seguir· siendo el mismo ya que el producto conmuta.
+Por la forma en la que est√° definida la f√≥rmula es claro que al intercambiar $x_i$ por $y_i$ el resultado seguir√° siendo el mismo ya que el producto conmuta.
 
 
 #### (f) In *R*, show that when regression is performed *with* an intercept, the t-statistic for $H_0:\beta_1=0$ is the same for the regression of $y$ onto $x$ as it is for the regression of $x$ onto $y$.
@@ -287,7 +287,7 @@ plot(chas, crim)
 abline(reg.chas, col="red",lwd=2)
 ```
 
-De lo anterior podemos decir que todas las variables explicativas tienen una relacion estadisticamente significativa con **crim** salvo por **chas** ya que el p-value de su modelo es mayor a $0.05$ y esto nos lleva a aceptar $H_0$; en las gr·ficas se puede ver lo mencionado.
+De lo anterior podemos decir que todas las variables explicativas tienen una relacion estadisticamente significativa con **crim** salvo por **chas** ya que el p-value de su modelo es mayor a $0.05$ y esto nos lleva a aceptar $H_0$; en las gr√°ficas se puede ver lo mencionado.
 
 ####  (b) Fit a multiple regression model to predict the response using all of the predictors. Describe your results. For which predictors can we reject the null hypothesis $H_0:\beta_j = 0$?
 
@@ -297,7 +297,7 @@ summary(regtodas)
 ```
 
 Podemos rechazar $H_0$ para **zn**, **dis**, **rad**, **black** y **medv**.  
-Al hacer la regresiÛn m˙ltiple tenemos que podemos ver la variabilidad de la respuesta con unas cuantas variables significativas, al contrario que haciendo la regresiÛn simple que parecÌa ser que casi todas las variables eran significativas. Puede que esto ocurra porque hay variables relacionadas y que aportan la misma informaciÛn al modelo (se podria observar una tabla de correlacion para confirmar esto).
+Al hacer la regresi√≥n m√∫ltiple tenemos que podemos ver la variabilidad de la respuesta con unas cuantas variables significativas, al contrario que haciendo la regresi√≥n simple que parec√≠a ser que casi todas las variables eran significativas. Puede que esto ocurra porque hay variables relacionadas y que aportan la misma informaci√≥n al modelo (se podria observar una tabla de correlacion para confirmar esto).
 
 ####  (c) How do your results from (a) compare to your results from (b)? Create a plot displaying the univariate regression coefficients from (a) on the $x$-axis, and the multiple regression coefficients from (b) on the $y$-axis. That is, each predictor is displayed as a single point in the plot. Its coefficient in a simple linear regression model is shown on the $x$-axis, and its coefficient estimate in the multiple linear regression model is shown on the $y$-axis.
 
@@ -363,12 +363,12 @@ reg.medv2 <- lm(crim ~ poly(medv, 3))
 summary(reg.medv2)
 ```
 
-Habr· una relaciÛn no lineal si los coeficientes de $x^2$ y $x^3$ son significativos. Tomando en cuenta esto analizamos:  
+Habr√° una relaci√≥n no lineal si los coeficientes de $x^2$ y $x^3$ son significativos. Tomando en cuenta esto analizamos:  
 * Todos significativos: *indus, nox, age, dis, ptratio, medv*  
-* SÛlo el tÈrmino c˙bico **no** significativo: *zn, rm, rad, tax, lstat*  
-* SÛlo el tÈrmino lineal significativo: *black*  
+* S√≥lo el t√©rmino c√∫bico **no** significativo: *zn, rm, rad, tax, lstat*  
+* S√≥lo el t√©rmino lineal significativo: *black*  
 
-Entonces, sÛlo en *black* parece no haber una relaciÛn no lineal.
+Entonces, s√≥lo en *black* parece no haber una relaci√≥n no lineal.
 
 
 ```{r , echo=FALSE}
