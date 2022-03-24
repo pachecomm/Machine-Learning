@@ -9,7 +9,7 @@ sum(data$Class==3) ##=76-normal
 
 
 str(data) ##vemos que toma Class como _int_, entonces lo pasamos a factor
-data$Class<-factor(data$Class)#lo volvemos factor para poder aplicar relevel y que tome el 3 como referencia
+data$Class<-factor(data$Class) #lo volvemos factor para poder aplicar relevel y que tome el 3 como referencia
 data$Class<-relevel(data$Class, ref="3") ##hacemos que el paciente normal sea el de referencia
 str(data)
 data
@@ -75,6 +75,5 @@ cm2
 p3<-predict(modelo3,d.test)
 cm3<-table(p3,dc)
 cm3
-#hasta aquí todo chido
-#___________________________________________________________
+
 
