@@ -1,0 +1,253 @@
+---
+title: "Tarea 3"
+author:
+  -"Miranda Peñafiel Melissa Sofía, Pacheco Martínez Mariana"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+### Ejercio 3
+
+##### **III. Considere la base de datos $Glucose1.txt$ disponible en classroom. Con modificaciones menores:**
+```{r, echo=FALSE}
+##Cargamos los datos
+data=read.csv("C:/Users/pache/Desktop/Escuela/Seminario/Tarea/3/Glucose1.txt")
+str(data)
+```
+##### **1. Este problema involucra cinco predictores de tipo continuo o numérico. Es un problema de clasificación de tres grupos. $Class$ identifica a las tres clases. Considere el ajuste de un modelo de regresión logística. El ajuste lo puede hacer utilizando, e.g., alguno de los dos paquetes listados abajo. Elija uno de los tres grupos como grupo de referencia y justifique su elección.**
+
+##### **a) La función $multinorm()$ del paquete $nnet$.**
+##### **b) $vglm()$ del paquete $VGAM$.**
+
+Decidimos utilizar el $Grupo$ $3$ como grupo de referencia ya que este es el que corresponde a las personas $normales$, es decir que no tienen ningún tipo de diabetes, y tomando en cuenta que, en los estudios realizados por cluster$^1$, el grupo $normal$ separaba a los dos restantes, nos parece lo más adecuado.
+
+$^1$Estudios que se describen en el $PDF$ que se adjuntó para este ejercicio.
+
+##### **Considere optimizar la selección de un modelo desde dos puntos de vista diferentes aunque independientes:**
+##### **a) $Descriptivo$. Considerar su interpretación. Para hacer inferencia.**
+
+##### **b) $Predictivo$. Optimizando su capacidad predictiva.**
+
+##### **Es factible que ofrezca dos modelos diferentes, aunque pueden coincidir. Para el modelo descriptivo, comente sobre su interpretación. No es fácil, son tres clases y el ajuste de dos regresiones binarias no independientes. Para el predictivo, optimice las tasas de error de clasificación. En ambos casos reporte el modelo ajustado y las tasas de clasificación errónea por clase y global. Aparentes y no aparentes.** 
+
+Primero, como se pude observar arriba, $R$ toma la columna $Class$ como $int$ y nosotros necesitamos que lo tome como $factor$, y como ya vimos que el número $3$ es el que corresponde a las personas $normales$, usamos la función $relevel()$ para que tome al número $3$ como el de referencia y no al $1$ (el 1 significa overt diabetes, el 2 chemical diabetes).
+
+```{r}
+data$Class<-factor(data$Class)
+data$Class<-relevel(data$Class, ref="3")
+str(data)
+```
+ 
+##### **a) $Descriptivo$. Considerar su interpretación. Para hacer inferencia.**
+
+Como para este modelo solo buscamos hacer inferencia, no es necesario modificar o particionar los datos de la tabla, por lo que le aplicaremos una regresión logística multinomial y analizaremos los resultados.
+
+```{r results='hide'}
+library(nnet)
+modelo<-multinom(data$Class~Weight+Fglucose+GlucoseInt+InsulinResp+InsulineResist, data=data)
+```
+```{r}
+summary(modelo)
+```
+
+Para este análisis descriptivo podemos decir varias cosas; 
+Cada renglón en la tabla de coeficientes corresponde a la ecuación del modelo. El primer renglón representa los coeficientes del resultado tipo 1 (diabetes manifiesta) en comparación con nuestra referencia que es el tipo 3. El segundo renglón representa los coeficientes del resultado tipo 2 (chemical diabetes) en comparación con nuestra referencia (tipo 3). 
+
+Notemos que estamos obteniendo los coeficientes con los logitos entonces los transformamos para poder interpretar "mejor"
+
+```{r}
+exp(coef(modelo))
+```
+De lo que podremos decir que la razón de momios para un aumento de una unidad en la variable $Weight$ es de $2.26 \times 10^{-36}$ de ser tipo 1 vs ser tipo 3. De manera análoga se pueden analizar los demás coeficientes. En resumen, un valor mayor a 1 representa un aumento, un valor igual a 1 representa que no hubo cambios y un valor menor a 1 representa que hubo una disminución.
+
+
+De igual modo, con los coeficientes obtenemos las siguientes ecuaciones:
+$$y_{1} = ln \left( \frac{P(1)}{P(3)} \right) = -208.43 -82.07(Weight)+0.92(Fglucose)+0.34(GlucoseInt) -0.01(InsulinResp)+0.15(InsulineResist)$$
+$$y_{2} =ln \left( \frac{P(2)}{P(3)} \right) = -102.03 -11.65(Weight)-0.36(FGlucose)+0.32(GlucoseInt)-0.02(InsulinResp)+0.10(InsulineResist)$$
+
+De esta forma, podemos decir que 
+
+$$\frac{P(1)}{P(3)} = e^{y_{1}} \quad \text{y} \quad \frac{P(2)}{P(3)} = e^{y_{2}}$$
+
+Así,
+
+$$\frac{P(1)+P(2)}{P(3)} = e^{y_{1}} + e^{y_{2}}; \quad P(1) + P(2) + P(3) = 1$$
+
+Lo que implica que,
+
+$$\frac{1-P(3)}{P(3)} = e^{y_{1}} + e^{y_{2}}
+\Longrightarrow \frac{1}{P(3)} =  1 + e^{y_{1}} + e^{y_{2}}$$
+
+Obteniendo
+
+$$P(3) = \frac{1}{1 + e^{y_{1}} + e^{y_{2}}}$$
+
+Y sustituyendo esto en las ecuaciones anteriores podemos decir que 
+
+$$P(1) = \frac{e^{y_{1}}}{1 + e^{y_{1}} + e^{y_{2}}}; \qquad P(2) = \frac{e^{y_{2}}}{1 + e^{y_{1}} + e^{y_{2}}}$$
+
+y estos valores se obtienen con 
+
+```{r results='hide'}
+predict(modelo, data, type = "prob")
+```
+
+
+A su vez, podemos ver la matriz de confusión
+
+```{r}
+matconf <- table(predict(modelo,data), data$Class, dnn = c("Predicciones", "Clases verdaderas"))
+matconf
+```
+ 
+ $\therefore$ Podemos decir que, aparentemente, este es un excelente modelo ya que no hubo error de clasificación en ninguno de los casos.
+ 
+ _________________________________________________________________________________________
+ 
+##### **b) $Predictivo$. Optimizando su capacidad predictiva.**
+
+Una vez que tenemos esto, debemos dividir la muestra en $Train$ y $Test$, como tenemos 145 datos, decidimos usar $\frac{2}{3}$ de los datos para train (97 pacientes) y $\frac{1}{3}$ para test (48 pacientes), pero como estos datos deben ser proporcionales, necesitamos saber cuántos tenemos de cada clase, dividirla en 3 y hacer las clasificaciones.
+
+```{r}
+sum(data$Class==1) ##=33-overt diabetes
+sum(data$Class==2) ##=36-chemical diabetes
+sum(data$Class==3) ##=76-normal
+```
+
+Una vez que sabemos cuántos tenemos de cada uno lo dividiremos de la siguiente forma:
+
+| Variable        | Train| Test |Total |
+| ------          |------| -----|----- |
+|Normal           | 51   | 25   | 76   |
+|Overt diabetes   | 22   | 11   | 33   |
+|Chemical diabetes| 24   | 12   | 36   |
+| Total           | 97   | 48   | 145  |
+
+Y para que sea más fácil dividirlos así, ordenamos la tabla de acuerdo a la variable $Class$ y hacemos 2 sub-dataframes
+```{r,include=FALSE}
+library(tidyverse)
+```
+
+```{r results='hide'}
+data1= data %>% arrange(Class)
+data1[c(72:79,109:111),]##obtenemos algunos datos de la tabla, para ver que sí está ordenada por clase.
+d.train=data1[c(1:51,77:98,110:133),]##sub-dataframe de los datos para train
+d.train
+d.test=data1[c(52:76,99:109,134:145),] ##sub-dataframe de los datos para test
+d.test
+```
+
+Ya que tenemos esto podríamos pensar en mejorar el modelo descriptivo quitando o modificando alguna de las variables. Como no somos expertos en el tema que trata la base y no sabemos a ciencia cierta qué tan importante es una variable con respecto a la otra aplicaremos la función $step()$ para tratar de reducir el $AIC$.
+```{r results='hide'}
+stm <- step(modelo)
+```
+
+```{r}
+stm$coefnames
+stm$AIC
+```
+
+$\therefore$ Con este procedimiento obtuvimos que las variables más importantes son $Fglucose$, $GlucoseInt$ e $InsulinResist$, por lo que serán las que utilizaremos para el modelo predictivo.
+ 
+
+```{r results='hide'}
+library(nnet)
+modelo2<-multinom(d.train$Class~Fglucose+GlucoseInt+InsulineResist, data=d.train)
+```
+```{r}
+summary(modelo2)
+```
+
+ Aquí podemos ver que efectivamente el $AIC$ baja de $25.07$ a $17.3$, lo cual indica una mejora en el modelo. Ahora le aplicamos el modelo a los datos $Test$
+
+```{r}
+p<-predict(modelo2,d.test)##predecimos la clasificación de _d.test_ con el modelo de train #vector de predicción
+dc<-data1[c(52:76,99:109,134:145),]$Class ##vector de clasificación real de esos datos
+sum(dc==p) ##saber cuántos coinciden
+
+cm=table(p,dc, dnn = c("Predicciones", "Clases verdaderas"))
+cm
+```
+
+Podemos ver que es un buen modelo, ya que predijo bien $44/48$
+
+$\therefore$ Es un buen modelo ya que sólo clasificó mal los del Grupo 3 (Normales) con los del Grupo 2 (Chemical Diabetes), lo cual no debería sorprendernos tanto ya que los pacientes con "Chemical Diabetes" son los que no presentan sintomas de tener diabetes, aunque sí la tengan y esto podría coincidir con los estudios de alguien sin diabetes.
+ _________________________________________________________________________________________
+
+Ahora vamos a sacar los errores $No$ $Aparentes$, empezando por la Tasa Global; que es todos los que fueron mal clasificados entre el número total de observaciones
+
+```{r}
+##Tasa global
+1-sum(diag(cm))/sum(cm)
+```
+
+$\therefore$ La Tasa Global de error es de 8.33%
+
+Ahora, para las tasas por grupo; son las observaciones mal clasificadas del grupo, entre las observaciones totales del grupo. Como vimos, sólo hubo mal clasificados en el grupo 3, entonces sólo sacaremos esta tasa.
+
+```{r}
+#Tasas por grupo
+###Tasa grupo 3
+4/25
+```
+$\therefore$ La Tasa de error del Grupo3 es de 16%
+
+Finalmente el modelo quedaría como:
+
+$$ln \left( \frac{P(1)}{P(3)} \right) = -121.8 +0.49(Fglucose)+0.14(GlucoseInt)+0.04(InsulineResist)$$
+
+$$ln \left( \frac{P(2)}{P(3)} \right) = -63.94 -0.0007(FGlucose)+0.14(GlucoseInt)+0.03(InsulineResist)$$
+con:
+
+$$ \text{Tasas de error}= \left\{ \begin{array}{lcc}
+             Global = 8.33\% \\
+             \\ Grupo3=16\% \\
+             \\ Grupo1=Grupo2=0\%
+             \end{array}
+   \right. $$
+
+
+Para sacar los errores $Aparentes$, entrenaremos el modelo con todos los datos y lo probaremos, de nuevo, con todos los datos para después sacar las tasas de error.
+
+```{r results='hide'}
+library(nnet)
+modelo3<-multinom(data1$Class~Fglucose+GlucoseInt+InsulineResist, data=data1)
+```
+```{r}
+summary(modelo3)
+```
+ Podemos ver que usando todos los datos tenemos una mejora en el modelo ya que el $AIC$ bajó nuevamente, de $17.3$ a $16.9$.
+ 
+ Ahora vamos a probar el modelo para todos los datos
+ 
+```{r}
+p1<-predict(modelo3,data) #vector de predicción
+dc1<-data$Class ##vector de clasificación real de esos datos
+sum(dc1==p1) ##saber cuántos coinciden
+
+cm1=table(p1,dc1, dnn = c("Predicciones", "Clases verdaderas"))
+cm1
+```
+ Podemos ver que este es un excelente modelo ya que clasificó correctamente todos los datos.Por lo tanto las tasas de error son cero.
+ 
+ $\therefore$ El modelo quedaría como:
+ 
+ $$ln \left( \frac{P(1)}{P(3)} \right) = -295.6 +1.13(Fglucose)+0.36(GlucoseInt)+0.05(InsulineResist)$$
+
+$$ln \left( \frac{P(2)}{P(3)} \right) = -144.60 -0.3(FGlucose)+0.38(GlucoseInt)+0.06(InsulineResist)$$
+__________________________________________________________________________________
+ 
+ 
+ 
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
